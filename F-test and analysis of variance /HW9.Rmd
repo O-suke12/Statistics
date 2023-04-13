@@ -1,0 +1,108 @@
+---
+title: "HW9"
+output:
+  html_document: default
+  pdf_document: default
+name: Osuke Sashida
+---
+
+
+```{r setup}
+library(alr4)
+```
+
+## Problem1
+These two models are not nested model. 
+So we can't compare these model using F-test.
+```{r 1}
+head(UN11)
+attach(UN11)
+model1 = lm(lifeExpF~group)
+model2 = lm(lifeExpF~log(ppgdp))
+```
+
+## Problem2
+From summary P-value is lower than significane level. So we can reject null hypothesis which has just intercept.
+```{r 2}
+head(fuel2001)
+attach(fuel2001)
+alt_model= lm(FuelC~Tax+Drivers+Income+log(Miles))
+summary(alt_model)
+```
+
+## Problem3
+Alternative model is significant compare to each null model.
+```{r 3}
+head(cakes)
+attach(cakes)
+model_a = lm(Y~X1+I(X1^2)+X2+I(X2^2)+I(X1*X2))
+summary(model_a)
+model_n1 = lm(Y~X1+I(X1^2)+X2+I(X2^2))
+anova(model_n1, model_a)
+model_n2 = lm(Y~X1+X2+I(X2^2)+I(X1*X2))
+anova(model_n2, model_a)
+model_n3 = lm(Y~X2+I(X2^2))
+anova(model_n3, model_a)
+```
+# Manual
+```{r manual}
+RSS_n1 = sum(resid(model_n1)^2)
+RSS_a = sum(resid(model_a)^2)
+df_n1 = 9
+df_a = 8
+f1 = ((RSS_n1-RSS_a)/(df_n1-df_a))/(RSS_a/df_a)
+p_val1 = pf(f1,1,8, lower.tail = FALSE)
+p_val1
+```
+
+## Problem4
+$NH:b_2=0, AH:b_2\not=0$
+
+P_value is 0.08085 so that we can't reject null hypothesis.
+Which means $b_2=0$ has probability 0.0404 to be above or below 1.751 each. 
+```{r 4}
+head(Rateprof)
+attach(Rateprof)
+gender = as.factor(gender)
+pepper = as.factor(pepper)
+discipline = as.factor(discipline)
+prof_model = lm(quality~gender+numYears+pepper+discipline+easiness+raterInterest)
+summary(prof_model)
+```
+$NH:b_2=0, AH:b_2<0$
+
+P_value is 0.9595852 so that we can't reject null hypothesis again.
+
+$NH:b_2=0, AH:b_2>0$
+
+P_value is 0.04041476 so that we can reject null hypothesis.
+```{r 4-2}
+pt(1.751, 347, lower.tail = TRUE)
+pt(1.751, 347, lower.tail = FALSE)
+Anova(prof_model, type = "II")
+prof_model2 = lm(quality~numYears+pepper+discipline+easiness+raterInterest)
+Anova(prof_model, type = "II")
+prof_model3 = lm(quality~pepper+discipline+easiness+raterInterest)
+Anova(prof_model, type = "II")
+summary(prof_model3)
+```
+
+## Problem5
+```{r 5}
+head(twins)
+attach(twins)
+C = as.factor(C)
+plot(IQb, IQf,pch = 19,col=C)
+legend("topleft",
+       legend = levels(C),
+       pch = 19,
+       col = factor(levels(C)))
+twins_model = lm(IQf~IQb+C+IQb:C)
+summary(twins_model)
+Anova(twins_model, type="II")
+twins_model2 = lm(IQf~IQb+C)
+Anova(twins_model2, type="II")
+twins_model3 = lm(IQf~IQb)
+Anova(twins_model3, type="II")
+summary(twins_model3)
+```
