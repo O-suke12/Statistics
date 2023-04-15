@@ -1,0 +1,115 @@
+---
+title: "HW10"
+output:
+  html_document: default
+  pdf_document: default
+name: "Osuke Sashida"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Problem 1
+
+```{r 1}
+library(alr4)
+library(carData)
+data(Moore)
+head(Moore)
+attach(Moore)
+as.factor(partner.status)
+as.factor(fcategory)
+```
+(1)
+Some predictor's P-value is not significant, which means this model has redundant predictor.
+```{r 1-1}
+Moore_model = lm(conformity~partner.status+fcategory+partner.status:fcategory)
+summary(Moore_model)
+```
+(2)
+"anova" tests using TypeI while "Anova" test using TypeII.
+TypeII test doesn't care about interaction term.
+We can see fcategory should be dropped.
+```{r 1-2}
+anova(Moore_model)
+Anova(Moore_model, type="II")
+```
+(3)Those p-values are not significant. So this tells us those mean fcategory dont't work well.
+```{r 1-3}
+tmp <- aov(conformity~partner.status*fcategory,data=Moore)
+TukeyHSD(tmp,which="fcategory")
+```
+
+
+## Problem2
+(1)
+We can say most of predictors has collinearity to another predictor.
+```{r 2}
+head(Rpdata)
+attach(Rpdata)
+plot(Rpdata)
+```
+
+(2)
+All of predictors are significant in spite of having collinearity.
+```{r 2-2}
+rp_model = lm(y~x1+x2+x3+x4+x5+x6)
+summary(rp_model)
+```
+(3)
+Apprently this looks strange.
+```{r 2-3}
+residualPlot(rp_model)
+```
+
+## Problem3
+(1)
+This linear model looks fitted well and summary also shows.
+```{r 3}
+head(pipeline)
+attach(pipeline)
+pipe_model = lm(Lab~Field)
+summary(pipe_model)
+plot(Lab~Field)
+abline(pipe_model)
+```
+
+(2)
+We can tell there are outliers and variance tends to be bigger from residual versus fitted plot.
+ncvTest tells us we should reject null hypothesis which means variance is not constant.
+```{r 3-2}
+residualPlot(pipe_model)
+ncvTest(pipe_model)
+```
+
+## Problem4
+(1)
+Each variable and overall Tukey test aren't significant which means this model contains curvature but it can fit enough.
+```{r}
+head(water)
+attach(water)
+water_reg = lm(log(BSAAM)~log(APMAM)+log(APSAB)+log(APSLAKE)+log(OPBPC)+log(OPRC)+log(OPSLAKE))
+summary(water_reg)
+residualPlots(water_reg)
+```
+
+## Problem5
+$E=(y_i-\hat{y}_{i(i)}|X)=\delta$
+
+$H_0:\delta=0, H_a:\delta\not=0$
+
+No.3 and 4 datas can reject null hypothesis which means these are outlier.
+```{r}
+n = 54
+p = 5
+std = 4
+error = c(1,1.732,9,10.295)
+hat_diag = c(0.9,0.75,0.25,0.185)
+standard_resid = error/(std*sqrt(1-hat_diag))
+student_resid = standard_resid*sqrt((n-p-1)/(n-p-(standard_resid)^2))
+dffits = (1/p)*(standard_resid)^2*(hat_diag/(1-hat_diag))
+df = data.frame(error, hat_diag, standard_resid, student_resid, dffits)
+df
+2*pt(standard_resid, n-p-1, lower.tail = FALSE)
+```
