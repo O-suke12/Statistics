@@ -1,0 +1,187 @@
+---
+title: "HW11"
+output:
+  pdf_document: default
+  html_document: default
+name: Osuke Sashida
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(alr4)
+```
+
+## Problem1
+(a) This is non-constant variance and this even looks like $1/x$ curve.
+```{r 1-a}
+str(BigMac2003)
+attach(BigMac2003)
+plot(BigMac~FoodIndex)
+```
+
+(b) According to Tukey test this model can't reject null hypothesis, which means there isn't curavature.
+```{r 1-b}
+mac.reg = lm(BigMac~log(FoodIndex))
+summary(mac.reg)
+residualPlots(mac.reg)
+```
+
+(c) But residual variance is non-constant. Because p-value is significance so that this model will reject null hypothesis.
+$NH: V(Y|X=x)=\sigma^2$
+
+$AH: V(Y|X=x)=\sigma^2exp(\lambda x)$.
+```{r 1-c}
+ncvTest(mac.reg)
+```
+
+(d) Box-Cox procedure describes it is reasonalble to transform y to somewhere between one power of -0.6 and one power -0.08. So we can choose $1/\sqrt y$ in this case.
+```{r 1-d}
+summary(powerTransform(mac.reg))
+```
+
+(e) Apparently this model doesn't have non constant variance any more.
+```{r 1-e}
+remac.reg = lm((1/sqrt(BigMac))~log(FoodIndex))
+summary(remac.reg)
+ncvTest(remac.reg)
+
+```
+
+(f) Obviously 41th data point is outlier.
+```{r 1-f}
+outlierTest(remac.reg)
+```
+
+(g) We can tell 41 th data is outlier from this plot. Cook distance and studentize error are so high.
+```{r 1-g}
+BigMac2003[41,]
+influenceIndexPlot(remac.reg)
+```
+
+(h)No outlier is in new dataset.
+```{r 1-h}
+newBigMac<-BigMac2003[-41,]
+attach(newBigMac)
+newmac.reg = lm((1/sqrt(BigMac))~log(FoodIndex))
+summary(newmac.reg)
+outlierTest(newmac.reg)
+ncvTest(newmac.reg)
+residualPlots(newmac.reg)
+```
+
+(i) As we can see, the slope and intercept don't look these have changed much. We can tell from actual values. Since that outlier's hat-value is not large. But each significance and overall significance are highly improved.
+```{r 1-}
+attach(BigMac2003)
+plot((1/sqrt(BigMac))~log(FoodIndex))
+abline(remac.reg)
+summary(remac.reg)
+attach(newBigMac)
+plot((1/sqrt(BigMac))~log(FoodIndex))
+abline(newmac.reg)
+summary(newmac.reg)
+```
+
+## Problem2
+As a result, 50th data plot is outlier and 50th data is Palm Beach.
+
+After removing Palm Beach from dataset, DADE got to be outlier.
+
+From Box-Cox Buchanan should be transformed to log then Palm Beach is no longer outlier.
+```{r 2}
+str(florida)
+attach(florida)
+plot(Buchanan~Bush)
+text(Bush[50], Buchanan[50]-100,  labels="Palm Beach")
+text(Bush[13], Buchanan[13]-100,  labels="DADE")
+vote.reg = lm(Buchanan~Bush)
+summary(vote.reg)
+outlierTest(vote.reg)
+florida[50,]
+
+florida2 = florida[-50,]
+attach(florida2)
+vote2.reg = lm(Buchanan~Bush)
+outlierTest(vote2.reg)
+florida[13,]
+
+attach(florida)
+fix = powerTransform(vote.reg)
+summary(fix)
+fixvote.reg = lm(log(Buchanan)~Bush)
+outlierTest(fixvote.reg)
+plot(log(Buchanan)~Bush)
+text(log(Bush[50]), Buchanan[50]-100,  labels="Palm Beach")
+text(log(Bush[13]), Buchanan[13]-100,  labels="DADE")
+abline(fixvote.reg)
+```
+
+## Problem3 
+(1) Obviously we can tell this model is needed to transform from Tukey test.
+```{r 3-1}
+str(baeskel)
+attach(baeskel)
+plot(Tension~Sulfur)
+sul.reg = lm(Tension~Sulfur)
+residualPlots(sul.reg)
+```
+
+(2) $\lambda = 0$ model is the most likely to fit.
+```{r 3-2}
+x <- rep(1:12)
+transformedx <- 1/x
+transneg.reg = lm(Tension~transformedx)
+plot(Tension~Sulfur)
+abline(transneg.reg)
+
+trans0.reg = lm(Tension~1)
+plot(Tension~(1/Sulfur))
+abline(trans0.reg)
+
+plot(Tension~Sulfur)
+abline(sul.reg)
+```
+
+(3) 
+From Box-Cox we can conclude we don't have to trasform this model anymore.
+```{r 3-3}
+logsul.reg = lm(Tension~log(Sulfur))
+summary(logsul.reg)
+y_hat = predict(logsul.reg)
+plot(y_hat~Tension)
+
+bc = powerTransform(logsul.reg)
+summary(bc)
+```
+
+
+
+## Problem4
+Transformations of x for {-1,0,1} are not enough.
+As we can see, quadratic polynomial regression has over 0.9 R squared value.
+We can say it fits well and yet, Speed term is not significant.
+```{r 4}
+str(stopping)
+attach(stopping)
+stop.reg = lm(Distance~Speed)
+plot(Distance~Speed)
+abline(stop.reg)
+bc = powerTransform(stop.reg)
+summary(bc)
+
+stop2.reg = lm(sqrt(Distance)~Speed)
+plot(sqrt(Distance)~Speed)
+abline(stop2.reg)
+summary(stop2.reg)
+
+x <- rep(1:62)
+transformedx <- 1/x
+stop_lam1.reg = lm(Distance~transformedx)
+summary(stop_lam1.reg)
+stop_lam2.reg = lm(Distance~1)
+summary(stop_lam2.reg)
+stop_lam3.reg = lm(Distance~Speed)
+summary(stop_lam3.reg)
+
+quad.reg = lm(Distance~Speed+I(Speed^2))
+summary(quad.reg)
+```
