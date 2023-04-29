@@ -1,0 +1,187 @@
+---
+title: "HW 12 Last HW"
+author: "Ronald Barry"
+date: "4/16/2023"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(alr4)
+library(leaps)
+```
+
+#### First HW Problem
+
+Text problem 7.7
+
+This experimental bias leads to 0 slope and making intercept close to average size of seeds.
+Error doesn't change much.
+```{r 1-1}
+str(galtonpeas)
+attach(galtonpeas)
+plot(Progeny~Parent)
+
+model = lm(Progeny~Parent)
+summary(model)
+weight <- 1 / lm(abs(model$residuals) ~ model$fitted.values)$fitted.values^2
+wls = lm(Progeny~Parent, weights = weight)
+summary(wls)
+abline(wls)
+detach(galtonpeas)
+```
+
+#### Second HW Problem
+
+Text problem 10.3 (see notes below)
+
+Forward selection chose $y=X_3$ while backward selection chose $y=X_1+X_2$.
+However as we can see, $y=X_1+X_2$ is way better than $y=X_3$.
+$y=X_3$ is not even like the second.
+This is because if we consider just one parameter, $X_3$ is better than $X_1$, $X_2$.
+That's why badly forward selection chose $X_3$.
+This is like local optimization.
+
+```{r 2}
+str(mantel)
+attach(mantel)
+null.reg = lm(Y~1)
+step(null.reg, scope=~X1+X2+X3, direction = "forward")
+
+full.reg = lm(Y~X1+X2+X3)
+step(full.reg, scope=~1, direction = "backward")
+
+X = cbind(X1, X2, X3)
+output = leaps(x=X, y=Y)
+AIC_values <- rep(NA, 7)
+for(i in 1:7){
+the_model <- output$which[i,]
+reg <- lm(Y ~ X[,the_model]) # each model tried
+AIC_values[i] <- AIC(reg)
+}
+cbind(output$which, AIC_values)
+detach(mantel)
+```
+
+#### Third HW Problem
+
+Text problem 10.6 (see notes below)
+
+$Y = NS/ES = Diversity$
+
+Eventually, I selected $Y=log(Areaa)+Anear+Dist$
+
+Obviously area of island is related to diversity.
+The bigger island has more different environment, or opportunity for creatures to live there.
+And also area of closest island is important.
+Because for example birds can move their habit on to close island.
+Also distance has the same reason.
+```{r 3}
+str(galapagos)
+attach(galapagos)
+
+Y=NS/ES
+gal.reg = lm(Y~Area+Anear+Dist+DistSC)
+residualPlots(gal.reg)
+
+DistSC = DistSC+0.2
+trans_gal.reg = lm(Y~log(Area)+Anear+Dist+DistSC)
+residualPlots(trans_gal.reg)
+
+step(trans_gal.reg, scope=~1, direction = "backward")
+```
+
+#### Fourth HW Problem
+
+You can try a relatively simple logistic regression.
+
+```{r }
+library(car)
+grain_size <- 
+c(0.245, 0.247, 0.285, 0.299, 0.327, 0.347, 0.356, 0.36, 0.363, 
+0.364, 0.398, 0.4, 0.409, 0.421, 0.432, 0.473, 0.509, 0.529, 
+0.561, 0.569, 0.594, 0.638, 0.656, 0.816, 0.853, 0.938, 1.036, 
+1.045)
+spider <-
+c("absent", "absent", "present", "present", "present", "present", "absent", "present", "absent", "present", "absent", "present", 
+"absent", "present", "absent", "present", "present", "present", 
+"absent", "absent", "present", "present", "present", "present", 
+"present", "present", "present", "present")
+spider <- recode(spider, "'absent'=0; 'present'=1")
+reg1 <- glm(spider~grain_size, family=binomial)
+summary(reg1)
+reg0 <- glm(spider~1, family=binomial)
+summary(reg0)
+```
+
+a) When do you use a logistic model?  How does it differ from regression?
+
+For classification problem.
+This estimates the probability of which group the data likely to be.
+
+
+b) What is a **link** function?
+
+It makes range between negative infinity to positive infinity respond to probability of 0 to 1.
+
+
+c)  Plot the presence/absence variable **spider** against the predictor **grain_size**.  What do you see?
+
+It looks like we have to use logistic regression.
+Cause linear regression doesn't seem to work at all.
+
+
+d) Examine the AIC values from the two models.  What model is best?  What is your conclusion?  (If you look really carefully, you'll notice that something slightly odd happened.)
+
+Logistic regression model doesn't fit enough to tell difference between those two groups.
+We need more absent data probably.
+```{r 4-d}
+extractAIC(reg0)
+extractAIC(reg1)
+plot(spider~grain_size)
+xseq = seq(min(grain_size), max(grain_size), length=1000)
+probs = predict(reg1, newdata=data.frame(x1=xseq), type="response")
+lines(grain_size, probs)
+```
+
+
+NOTE:  Data from (2006) Suzuki, S., N. Tsurusaki, and Y. Kodama. *Distribution of an endangered burrowing spider Lycosa ishikariana in the San\'in Coast of Honshu, Japan (Araneae: Lycosidae)*. **Acta Arachnologica** 55: 79-86.
+
+They measured grain size on 28 beaches and whether or not the spider was present.
+
+
+
+==================================================
+
+#### **COMMENTS**
+
+NOTES:
+
+Problem 10.3 comments: Code for the stepwise algorithm is below. Comment on the strange result for the Backward algorithm (hint: plot $Y$ vs $X1 + X2$). To get **AIC** and **BIC** for all $2^3 = 8$ models, use the **extractAIC()** function as shown in lecture notes and lab.
+
+Code for Forward and Backward Stepwise Algorithms:
+
+```{r, eval=FALSE}
+library(alr4)
+data(mantel)
+reg.full <- lm(Y ~ X1 + X2 + X3, data=mantel)
+reg.start <- lm(Y ~ 1, data=mantel)
+
+step(reg.start, scope =~ X1 + X2 + X3, direction="forward")
+step(reg.full, scope =~ 1, direction="backward")
+```
+
+Problem 10.6: For this problem,
+
+1. Use the response $Y=NS/ES$, the ratio of number of  species to number of endemic species 
+
+2. Fit the model with $Y$ and all regressors except elevation. That is $NS/ES = Area+Anear+Dist+DistSC4$. Construct and interpret residual plots and test for non-constant variance.
+
+3. Show that the model using log-transformations of the above regressors satisfies linearity and constant variance assumptions. The variable DistSC contains a zero value. Add the constant 0.2 to this regressor before transforming.
+
+4. Select a best model using the Backward stepwise algorithm.
+
+5. Summarize your results. Decide on a final model. Report your estimated equation and discuss the relationships among the regressors in your model and the response. What do you learn about species diversity (actually the response $Y=NS/ES$)?
+
